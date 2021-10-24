@@ -37,11 +37,13 @@ class MelSpectrogram(torch.nn.Module):
 
     def __init__(self):
         super().__init__()
-        window = torch.hann_window(cargan.NUM_FFT, dtype=torch.float)
+        window = torch.hann_window(cargan.WINSIZE, dtype=torch.float)
         mel_basis = librosa.filters.mel(
             cargan.SAMPLE_RATE,
             cargan.NUM_FFT,
-            cargan.NUM_MELS
+            cargan.NUM_MELS,
+            cargan.MEL_FMIN,
+            cargan.MEL_FMAX
         ).astype(np.float32)
         mel_basis = torch.from_numpy(mel_basis)
         self.register_buffer("mel_basis", mel_basis)
@@ -56,6 +58,8 @@ class MelSpectrogram(torch.nn.Module):
         stft = torch.stft(
             audio,
             n_fft=cargan.NUM_FFT,
+            hop_length=cargan.HOPSIZE,
+            win_length=cargan.WINSIZE,
             window=self.window,
             center=False,
             return_complex=False)
@@ -67,7 +71,7 @@ class MelSpectrogram(torch.nn.Module):
         melspectrogram = torch.matmul(self.mel_basis, spectrogram)
 
         # Compute logmelspectrogram
-        return torch.log10(torch.clamp(melspectrogram, min=1e-5))
+        return torch.log(torch.clamp(melspectrogram, min=1e-5))
 
     def forward(self, audio):
         # Ensure correct shape

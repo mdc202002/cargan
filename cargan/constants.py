@@ -88,12 +88,19 @@ CUMSUM = False
 ###############################################################################
 
 
-# Minimum and maximum frequency
-FMIN = 50
-FMAX = 550
+# Minimum and maximum frequency for pitch prediction
+FMIN = 20
+FMAX = 2000
+
+# Minimum and maximum frequency for mel filter
+MEL_FMIN = 0
+MEL_FMAX = 8000
 
 # Audio hopsize
-HOPSIZE = 256
+HOPSIZE = 240
+
+# Audio winsize
+WINSIZE = 1024
 
 # Maximum sample value of 16-bit audio
 MAX_SAMPLE_VALUE = 32768
@@ -105,7 +112,7 @@ NUM_MELS = 80
 NUM_FFT = 1024
 
 # Audio sample rate
-SAMPLE_RATE = 22050
+SAMPLE_RATE = 24000
 
 
 ###############################################################################
