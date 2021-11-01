@@ -89,8 +89,8 @@ CUMSUM = False
 
 
 # Minimum and maximum frequency for pitch prediction
-FMIN = 20
-FMAX = 2000
+FMIN = 50
+FMAX = 1000
 
 # Minimum and maximum frequency for mel filter
 MEL_FMIN = 0
