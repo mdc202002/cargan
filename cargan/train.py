@@ -220,16 +220,12 @@ def train(rank, name, directory, datasets, checkpoint, gpu):
 
                 loss_D = 0
                 for scale in D_fake_det:
-                    if cargan.LOSS_ADVERSARIAL == 'mse':
-                        loss_D += F.mse_loss(scale[-1], torch.zeros_like(scale[-1]))
-                    elif cargan.LOSS_ADVERSARIAL == 'hinge':
-                        loss_D += F.relu(1 + scale[-1]).mean()
+                    loss_D += F.mse_loss(scale[-1], torch.zeros_like(scale[-1]))
+
 
                 for scale in D_real:
-                    if cargan.LOSS_ADVERSARIAL == 'mse':
-                        loss_D += F.mse_loss(scale[-1], torch.ones_like(scale[-1]))
-                    elif cargan.LOSS_ADVERSARIAL == 'hinge':
-                        loss_D += F.relu(1 - scale[-1]).mean()
+                    loss_D += F.mse_loss(scale[-1], torch.ones_like(scale[-1]))
+
 
                 netD.zero_grad()
                 loss_D.backward()
@@ -263,10 +259,8 @@ def train(rank, name, directory, datasets, checkpoint, gpu):
             D_real = netD(d_t)
 
             for scale in D_fake:
-                if cargan.LOSS_ADVERSARIAL == 'mse':
-                    loss_G += F.mse_loss(scale[-1], torch.ones_like(scale[-1]))
-                elif cargan.LOSS_ADVERSARIAL == 'hinge':
-                    loss_G += -scale[-1].mean()
+                loss_G += F.mse_loss(scale[-1], torch.ones_like(scale[-1]))
+                
 
             # L1 error on mel spectrogram
             if cargan.LOSS_MEL_ERROR:
