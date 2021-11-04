@@ -134,7 +134,7 @@ def train(rank, name, directory, datasets, checkpoint, gpu):
     #######################################
 
     test_data = []
-    if not cargan.CUMSUM and not rank:
+    if not rank:
         for i, (features, audio, _, _) in enumerate(test_loader):
             x_t = audio.to(device)
             s_t = features.to(device)
@@ -181,9 +181,9 @@ def train(rank, name, directory, datasets, checkpoint, gpu):
             netG.train()
             x_pred_t = netG(s_t1, ar)
 
-            if not cargan.CUMSUM:
-                s_pred_t = fft(x_pred_t)
-                mel_error = F.l1_loss(s_pred_t, s_t[:, :cargan.NUM_MELS])
+            
+            s_pred_t = fft(x_pred_t)
+            mel_error = F.l1_loss(s_pred_t, s_t[:, :cargan.NUM_MELS])
 
             # Discriminator input
             if ar is not None and cargan.AR_DISCRIM:
@@ -258,15 +258,15 @@ def train(rank, name, directory, datasets, checkpoint, gpu):
             ###################
             
             loss_G = 0
-            if not cargan.CUMSUM:
-                D_fake = netD(d_pred_t)
-                D_real = netD(d_t)
+            
+            D_fake = netD(d_pred_t)
+            D_real = netD(d_t)
 
-                for scale in D_fake:
-                    if cargan.LOSS_ADVERSARIAL == 'mse':
-                        loss_G += F.mse_loss(scale[-1], torch.ones_like(scale[-1]))
-                    elif cargan.LOSS_ADVERSARIAL == 'hinge':
-                        loss_G += -scale[-1].mean()
+            for scale in D_fake:
+                if cargan.LOSS_ADVERSARIAL == 'mse':
+                    loss_G += F.mse_loss(scale[-1], torch.ones_like(scale[-1]))
+                elif cargan.LOSS_ADVERSARIAL == 'hinge':
+                    loss_G += -scale[-1].mean()
 
             # L1 error on mel spectrogram
             if cargan.LOSS_MEL_ERROR:
@@ -312,8 +312,8 @@ def train(rank, name, directory, datasets, checkpoint, gpu):
 
             if not rank:
                 writer.add_scalar("train_loss/generator", loss_G.item(), steps)
-                if not cargan.CUMSUM:
-                    writer.add_scalar("train_loss/mel_reconstruction", mel_error.item(), steps)
+                
+                writer.add_scalar("train_loss/mel_reconstruction", mel_error.item(), steps)
                 if cargan.LOSS_PITCH_DISCRIMINATOR:
                     writer.add_scalar('train_loss/discriminator-pitch', loss_DP.item(), steps)
                     writer.add_scalar('train_loss/generator-pitch', loss_GP.item(), steps)
@@ -351,29 +351,21 @@ def train(rank, name, directory, datasets, checkpoint, gpu):
 
                         x_pred_t = netG(s_t1, ar)
 
-                        if cargan.CUMSUM:
-                            wave_errors.append(torch.nn.functional.mse_loss(x_t, x_pred_t).item())
-                        else:
-                            s_pred_t = fft(x_pred_t)
-                            mel_errors.append(F.l1_loss(s_pred_t, s_t[:, :cargan.NUM_MELS]).item())
+       
+                        s_pred_t = fft(x_pred_t)
+                        mel_errors.append(F.l1_loss(s_pred_t, s_t[:, :cargan.NUM_MELS]).item())
 
-                if cargan.CUMSUM:
-                    wave_error = np.asarray(wave_errors).mean(0)
-                    writer.add_scalar("val_loss/cumsum_mse", wave_error, steps)
-                    best_wave_error = wave_error
-                    print(f"Saving best model @ {best_wave_error:5.4f}...")
+
+                mel_error = np.asarray(mel_errors).mean(0)
+                writer.add_scalar("val_loss/mel_reconstruction", mel_error, steps)
+
+                if mel_error < best_mel_error:
+                    best_mel_error = mel_error
+                    print(f"Saving best model @ {best_mel_error:5.4f}...")
                     torch.save(netG_unwrapped.state_dict(), directory / "best_netG.pt")
-                else:
-                    mel_error = np.asarray(mel_errors).mean(0)
-                    writer.add_scalar("val_loss/mel_reconstruction", mel_error, steps)
-
-                    if mel_error < best_mel_error:
-                        best_mel_error = mel_error
-                        print(f"Saving best model @ {best_mel_error:5.4f}...")
-                        torch.save(netG_unwrapped.state_dict(), directory / "best_netG.pt")
-                        torch.save(netD_unwrapped.state_dict(), directory / "best_netD.pt")
-                        if cargan.LOSS_PITCH_DISCRIMINATOR:
-                            torch.save(pitchD_unwrapped.state_dict(), directory / "best_pitchD.pt")
+                    torch.save(netD_unwrapped.state_dict(), directory / "best_netD.pt")
+                    if cargan.LOSS_PITCH_DISCRIMINATOR:
+                        torch.save(pitchD_unwrapped.state_dict(), directory / "best_pitchD.pt")
 
                 print("-" * 100)
                 print("Took %5.4fs to run validation loop" % (time.time() - val_start))
@@ -384,7 +376,6 @@ def train(rank, name, directory, datasets, checkpoint, gpu):
             ########################################
 
             if (steps % cargan.INTERVAL_SAMPLE == 0 and
-                not cargan.CUMSUM and
                 not rank
             ):
                 save_start = time.time()
@@ -441,7 +432,6 @@ def train(rank, name, directory, datasets, checkpoint, gpu):
             ########################################
 
             if (steps % cargan.INTERVAL_PITCH == 0 and
-                not cargan.CUMSUM and
                 not rank
             ):
                 pitch_start = time.time()
@@ -508,7 +498,6 @@ def train(rank, name, directory, datasets, checkpoint, gpu):
             ########################################
 
             if (steps % cargan.INTERVAL_PHASE == 0 and
-                not cargan.CUMSUM and
                 not rank and
                 (not cargan.AUTOREGRESSIVE or cargan.CHUNK_SIZE >= cargan.NUM_FFT)
             ):
