@@ -1,4 +1,5 @@
-from setuptools import setup
+from pathlib import Path
+from setuptools import find_packages, setup
 
 
 with open('README.md', encoding='utf8') as file:
@@ -8,7 +9,7 @@ with open('README.md', encoding='utf8') as file:
 setup(
     name='cargan',
     description='Chunked Autoregressive GAN for Conditional Waveform Synthesis',
-    version='0.0.2',
+    version='0.0.4',
     author='Max Morrison',
     author_email='maxrmorrison@gmail.com',
     url='https://github.com/descriptinc/cargan',
@@ -19,8 +20,8 @@ setup(
         'torchaudio',
         'torchcrepe',
         'tqdm'],
-    packages=['cargan'],
-    package_data={'cargan': ['assets/*']},
+    packages=find_packages(),
+    package_data={'cargan': ['assets/*', 'assets/*/*']},
     long_description=long_description,
     long_description_content_type='text/markdown',
     keywords=['audio', 'speech', 'gan', 'pytorch', 'vocoder'])

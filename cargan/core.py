@@ -1,4 +1,5 @@
 import torch
+import torchaudio
 
 import cargan
 
@@ -10,11 +11,11 @@ import cargan
 
 def from_audio(
     audio,
-    sample_rate,
+    sample_rate=cargan.SAMPLE_RATE,
     checkpoint=cargan.DEFAULT_CHECKPOINT,
     gpu=None):
     """Perform vocoding from audio
-    
+
     Arguments
         audio : torch.Tensor(shape=(1, samples))
             The audio to vocode
@@ -22,7 +23,7 @@ def from_audio(
             The audio sample rate
         gpu : int or None
             The index of the gpu to use
-    
+
     Returns
         vocoded : torch.Tensor(shape=(1, samples))
             The vocoded audio
@@ -40,7 +41,7 @@ def from_audio_file_to_file(
     checkpoint=cargan.DEFAULT_CHECKPOINT,
     gpu=None):
     """Perform vocoding from audio file and save to file
-    
+
     Arguments
         audio_file : Path
             The audio file to vocode
@@ -82,13 +83,13 @@ def from_features(
     checkpoint=cargan.DEFAULT_CHECKPOINT,
     gpu=None):
     """Perform vocoding from features
-    
+
     Arguments
         features : torch.Tensor(shape=(1, cargan.NUM_FEATURES, frames)
             The features to vocode
         gpu : int or None
             The index of the gpu to use
-    
+
     Returns
         vocoded : torch.Tensor(shape=(1, cargan.HOPSIZE * frames))
             The vocoded audio
@@ -100,7 +101,7 @@ def from_features(
         from_features.model = cargan.load.model(checkpoint, gpu)
         from_features.checkpoint = checkpoint
         from_features.gpu = gpu
-    
+
     # Place features on device
     device = torch.device('cpu' if gpu is None else f'cuda:{gpu}')
     features = features.to(device)
@@ -111,7 +112,7 @@ def from_features(
             vocoded = ar_loop(from_features.model, features)
         else:
             vocoded = from_features.model(features)
-        
+
     return vocoded.squeeze(0)
 
 
@@ -121,7 +122,7 @@ def from_feature_file_to_file(
     checkpoint=cargan.DEFAULT_CHECKPOINT,
     gpu=None):
     """Perform vocoding from feature file and save to disk
-    
+
     Arguments
         feature_file : Path
             The feature file to vocode
@@ -143,7 +144,7 @@ def from_feature_files_to_files(
     checkpoint=cargan.DEFAULT_CHECKPOINT,
     gpu=None):
     """Perform vocoding from feature files and save to disk
-    
+
     Arguments
         feature_files : list(Path)
             The feature files to vocode
@@ -182,7 +183,7 @@ def ar_loop(model, features):
     # Pad features to be a multiple of the chunk size
     padding = (feat_chunk - (features.shape[2] % feat_chunk)) % feat_chunk
     features = torch.nn.functional.pad(features, (0, padding))
-    
+
     # Start with all zeros as conditioning
     prev_samples = torch.zeros(
         (1, 1, cargan.AR_INPUT_SIZE),
@@ -196,7 +197,7 @@ def ar_loop(model, features):
     else:
         signal_length = features.shape[2] * cargan.HOPSIZE
         feat_hop = cargan.AR_HOPSIZE // cargan.HOPSIZE
-    
+
     # Autoregressive loop
     signals = torch.zeros(
         signal_length,
@@ -217,6 +218,6 @@ def ar_loop(model, features):
                 prev_samples[:, :, :-cargan.CHUNK_SIZE] = \
                     prev_samples[:, :, cargan.CHUNK_SIZE:].clone()
                 prev_samples[:, :, -cargan.CHUNK_SIZE:] = signal
-        
+
         # Concatenate and remove padding
         return signals[None, None, :output_length]

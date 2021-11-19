@@ -1,7 +1,7 @@
 # Chunked Autoregressive GAN (CARGAN)
 [![PyPI](https://img.shields.io/pypi/v/cargan.svg)](https://pypi.python.org/pypi/cargan)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-<!-- [![Downloads](https://pepy.tech/badge/cargan)](https://pepy.tech/project/cargan) -->
+[![Downloads](https://pepy.tech/badge/cargan)](https://pepy.tech/project/cargan)
 
 Official implementation of the paper _Chunked Autoregressive GAN for Conditional Waveform Synthesis_ [[paper]](https://www.maxrmorrison.com/pdfs/morrison2022chunked.pdf) [[companion website]](https://www.maxrmorrison.com/sites/cargan/)
 
@@ -228,7 +228,7 @@ for each dataset in `cargan/assets/partitions/`.
 python -m cargan.partition --datasets <datasets>
 ```
 
-The optional `--overwrite` flag forces the existing parition to be overwritten.
+The optional `--overwrite` flag forces the existing partition to be overwritten.
 
 
 ### Train
